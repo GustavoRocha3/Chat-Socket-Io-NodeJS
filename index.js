@@ -20,7 +20,7 @@ io.on('connection',(socket)=>{
             usuarios.push(data);
             socketIds.push(socket.id);
 
-            socket.emit('new user', {success: true});
+            socket.emit('new user', {success: true, usuarios: usuarios});
             //Emit para os outros usuários dizendo que tem um novo usuário ativo.
         }
     })
@@ -28,7 +28,7 @@ io.on('connection',(socket)=>{
     socket.on('chat message', (obj) => {
         if(usuarios.indexOf(obj.nome) != -1 && usuarios.indexOf(obj.nome) == socketIds.indexOf(socket.id)){
 
-            io.emit('chat message',obj);
+            io.emit('chat message',obj, usuarios);
 
         }else{
 
@@ -41,6 +41,9 @@ io.on('connection',(socket)=>{
         let id = socketIds.indexOf(socket.id);
         socketIds.splice(id,1);
         usuarios.splice(id,1);
+
+        io.emit('disconnected', usuarios)
+
         console.log(socketIds);
         console.log(usuarios);
         console.log('user disconnected');

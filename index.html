@@ -5,9 +5,11 @@
     <style>
     body { 
         margin: 0;
-        padding-bottom: 3rem;
+        /* padding-bottom: 3rem; */
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         background-color: #444654;
+        display: flex;
+        height: 100vh;
     }
 
     ::-webkit-scrollbar {
@@ -21,10 +23,11 @@
 
     #form {
         background: rgba(0, 0, 0, 0.15); 
-        padding: 0.25rem; position: fixed; 
+        padding: 0.25rem; 
+        /* position: fixed; 
         bottom: 0; 
         left: 0; 
-        right: 0; 
+        right: 0;  */
         display: flex; 
         height: 3rem; 
         box-sizing: border-box; 
@@ -61,6 +64,11 @@
         list-style-type: none; 
         margin: 0; 
         padding: 0; 
+        height: 100%;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
     }
 
     #messages > li { 
@@ -112,24 +120,95 @@
         color: #88b3ab;
     }
 
+    .users {
+        width: 20%;
+        height: 100%;
+        background-color: #202c33;
+    }
+
+    .headUsers {
+        background-color: #444654;
+        margin: 15px;
+        border-radius: 20px;
+        padding: 10px 20px;
+        text-align: center;
+        color: white;
+    }
+
+    #logados {
+        background-color: #444654;
+        margin: 15px;
+        border-radius: 8px;
+        padding: 10px 20px;
+        height: 84%;
+        color: white;
+        overflow: auto;
+    }
+
+    .messages-box {
+        width: 80%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
     </style>
   </head>
+  <body style="display: flex;">
+    <div style="display: flex; width: 100%;">
+        <div class="users">
+            <div class="headUsers">
+                <p>Usuários Logados</p>
+            </div>
+            <div id="logados">
 
-  <body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
+            </div>
+        </div>
+        <div class="messages-box">
+            <ul id="messages"></ul>
+            <form id="form" action="">
+                <input id="input" autocomplete="off" /><button>Send</button>
+            </form>
+        </div>
+    </div>
+    <div>
+        
+    </div>
+    
+    
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
         let nome = prompt('Qual seu nome?');
+        var cardUsers = document.getElementById('logados');
+
+        function buildUsers(cardUsers, usuarios) {
+            var qtdUsers = cardUsers.childElementCount;
+                
+                if(qtdUsers < usuarios.length) {
+                    //zera os usuários
+                    cardUsers.replaceChildren('');
+                    //constrói com novo array
+                    for(var i = 0; i < usuarios.length; i++) {
+                        var pUser =  document.createElement('p');
+                        pUser.textContent = usuarios[i];
+                        cardUsers.appendChild(pUser);
+                    }
+                }
+        }
 
         socket.emit('new user', nome);
 
         socket.on('new user', function(data){
             if(data.success){
                 alert('Bem-vindo ao Chat ' + nome);
+
+                for(var i = 0; i < data.usuarios.length; i++) {
+                    var pUser =  document.createElement('p');
+                        pUser.textContent = data.usuarios[i];
+                        cardUsers.appendChild(pUser);
+                }
+
             }else{
                 alert('Já existe usuário com este nome...');
                 window.location.href='/'
@@ -150,7 +229,9 @@
             }
         });
 
-        socket.on('chat message', function(obj){
+        
+
+        socket.on('chat message', function(obj,usuarios){
             if(obj.nome == nome){
                 var div = document.createElement('div');
                 div.className = 'send'
@@ -160,10 +241,27 @@
                 var p = document.createElement('p');
                 p.textContent = obj.nome + ': ' + obj.msg;
 
+                buildUsers(cardUsers, usuarios);
+                
+                // for(var i = 0; i < usuarios.length; i++) {
+                //     var pUser =  document.createElement('p');
+                //     pUser.textContent = usuarios[i];
+                //     cardUsers.appendChild(pUser);
+                // }
+
                 var span = document.createElement('span');
                 let dateNow = new Date();
                 let hora = dateNow.getHours();
                 let minutos = dateNow.getMinutes();
+
+                if (hora < 10) {
+                    hora = '0' + hora;
+                }
+
+                if(minutos < 10) {
+                    minutos = '0' + minutos; 
+                }
+
                 let horaAtual = hora + ":" + minutos;
 
                 span.textContent = horaAtual;
@@ -184,12 +282,19 @@
                 var p = document.createElement('p');
                 p.textContent = obj.nome + ': ' + obj.msg;
 
+                buildUsers(cardUsers, usuarios);
+
                 var span = document.createElement('span');
                 let dateNow = new Date();
                 let hora = dateNow.getHours();
                 let minutos = dateNow.getMinutes();
-                if(minutos == 0) {
-                    minutos = 00 
+
+                if (hora < 10) {
+                    hora = '0' + hora;
+                }
+
+                if(minutos < 10) {
+                    minutos = '0' + minutos; 
                 }
                 let horaAtual = hora + ":" + minutos;
 
@@ -203,7 +308,11 @@
                 messages.appendChild(div);
                 window.scrollTo(0, document.body.scrollHeight);
             }
-        })
+        });
+
+        socket.on('disconnected', (usuarios) => {
+            buildUsers(cardUsers, usuarios);
+        });
 
     </script>
   </body>
